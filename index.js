@@ -134,30 +134,22 @@ app.get("/productRelated/:id", (req, res) => {
     return;
   }
 
-  db.query(
-    "SELECT id_catalog FROM product WHERE id = ?",
-    [id],
-    (err, categoryData) => {
-      if (err) {
-        res.json({ thongbao: "Lỗi xảy ra khi lấy dữ liệu", err });
-      } else if (categoryData.length === 0) {
-        res.json({ thongbao: "Không tìm thấy sản phẩm" });
-      } else {
-        const id_catalog = categoryData[0].id_catalog;
-        db.query(
-          "SELECT * FROM product WHERE id_catalog = ? AND id != ?",
-          [id_catalog, id],
-          (err, relatedData) => {
-            if (err) {
-              res.json({ thongbao: "Lỗi xảy ra khi lấy dữ liệu", err });
-            } else {
-              res.json(relatedData);
-            }
-          }
-        );
-      }
+  db.query("SELECT id_catalog FROM product WHERE id = ?", [id], (err, categoryData) => {
+    if (err) {
+      res.json({ thongbao: "Lỗi xảy ra khi lấy dữ liệu", err });
+    } else if (categoryData.length === 0) {
+      res.json({ thongbao: "Không tìm thấy sản phẩm" });
+    } else {
+      const id_catalog = categoryData[0].id_catalog;
+      db.query("SELECT * FROM product WHERE id_catalog = ? AND id != ?", [id_catalog, id], (err, relatedData) => {
+        if (err) {
+          res.json({ thongbao: "Lỗi xảy ra khi lấy dữ liệu", err });
+        } else {
+          res.json(relatedData);
+        }
+      });
     }
-  );
+  });
 });
 
 app.post("/orders", (req, res) => {
@@ -248,9 +240,7 @@ app.post("/admin/product", adminAuth, upload.single("img"), (req, res) => {
   let img = req.file;
 
   if (!id_catalog || !name || !img) {
-    return res
-      .status(400)
-      .json({ error: "id_catalog, name, and img are required" });
+    return res.status(400).json({ error: "id_catalog, name, and img are required" });
   }
 
   const productData = {
@@ -268,9 +258,7 @@ app.post("/admin/product", adminAuth, upload.single("img"), (req, res) => {
   const sql = "INSERT INTO product SET ?";
   db.query(sql, productData, (err, result) => {
     if (err) {
-      return res
-        .status(500)
-        .json({ error: "Failed to add product", details: err });
+      return res.status(500).json({ error: "Failed to add product", details: err });
     }
     res.json({
       message: "Product added successfully",
@@ -292,9 +280,7 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
   const selectSql = "SELECT img FROM product WHERE id = ?";
   db.query(selectSql, [id], (err, results) => {
     if (err) {
-      return res
-        .status(500)
-        .json({ error: "Failed to retrieve product details" });
+      return res.status(500).json({ error: "Failed to retrieve product details" });
     }
 
     if (results.length === 0) {
@@ -302,13 +288,7 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
     }
 
     const product = results[0];
-    const oldImagePath = path.join(
-      __dirname,
-      "public",
-      "images",
-      "product",
-      product.img
-    );
+    const oldImagePath = path.join(__dirname, "public", "images", "product", product.img);
 
     const productData = {
       id_catalog,
@@ -328,9 +308,7 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
     const updateSql = "UPDATE product SET ? WHERE id = ?";
     db.query(updateSql, [productData, id], (err, result) => {
       if (err) {
-        return res
-          .status(500)
-          .json({ error: "Failed to update product", details: err });
+        return res.status(500).json({ error: "Failed to update product", details: err });
       }
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Product not found" });
@@ -364,13 +342,7 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
       return res.status(404).json({ error: "Product not found" });
     }
     const product = results[0];
-    const imagePath = path.join(
-      __dirname,
-      "public",
-      "images",
-      "product",
-      product.img
-    );
+    const imagePath = path.join(__dirname, "public", "images", "product", product.img);
 
     // Delete the product from the database
     const deleteSql = "DELETE FROM product WHERE id = ?";
@@ -450,7 +422,7 @@ app.delete("/admin/catalog/:id", adminAuth, (req, res) => {
 
 const bcrypt = require("bcrypt");
 const jwt = require("node-jsonwebtoken");
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const PRIVATE_KEY = process.env.PRIVATE_KEY || fs.readFileSync("private-key.txt");
 const maxAge = 3 * 60 * 60; //3 giờ - thời gian sống của token
 
 // API đăng ký người dùng
@@ -459,58 +431,48 @@ app.post("/register", async (req, res) => {
 
   // Kiểm tra tất cả các trường có được cung cấp hay không
   if (!email || !password || !fullName || !phone) {
-    return res
-      .status(400)
-      .json({ message: "All fields except role are required" });
+    return res.status(400).json({ message: "All fields except role are required" });
   }
 
   try {
     // Kiểm tra xem email đã được đăng ký chưa
-    db.query(
-      "SELECT id FROM user WHERE email = ?",
-      [email],
-      async (err, results) => {
-        if (err) {
-          return res
-            .status(500)
-            .json({ message: "Database query error", error: err });
-        }
-
-        if (results.length > 0) {
-          return res.status(400).json({ message: "Email đã tồn tại" });
-        }
-
-        // Mã hóa mật khẩu
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Thêm người dùng mới vào cơ sở dữ liệu
-        const user = { email, password: hashedPassword, fullName, role, phone };
-
-        db.query("INSERT INTO user SET ?", user, (err, result) => {
-          if (err) {
-            return res
-              .status(500)
-              .json({ message: "Database insertion error", error: err });
-          }
-
-          const userId = result.insertId; // Lấy ID của người dùng mới
-          const payload = { id: userId, fullName, email, role };
-
-          // Tạo token JWT
-          const token = jwt.sign(payload, PRIVATE_KEY, { expiresIn: maxAge });
-
-          let userReturn = { id: userId, email, fullName, role, phone };
-
-          // Gửi phản hồi với thông tin người dùng và token
-          res.status(201).json({
-            message: "User registered successfully",
-            token,
-            expiresIn: maxAge,
-            user: userReturn,
-          });
-        });
+    db.query("SELECT id FROM user WHERE email = ?", [email], async (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: "Database query error", error: err });
       }
-    );
+
+      if (results.length > 0) {
+        return res.status(400).json({ message: "Email đã tồn tại" });
+      }
+
+      // Mã hóa mật khẩu
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Thêm người dùng mới vào cơ sở dữ liệu
+      const user = { email, password: hashedPassword, fullName, role, phone };
+
+      db.query("INSERT INTO user SET ?", user, (err, result) => {
+        if (err) {
+          return res.status(500).json({ message: "Database insertion error", error: err });
+        }
+
+        const userId = result.insertId; // Lấy ID của người dùng mới
+        const payload = { id: userId, fullName, email, role };
+
+        // Tạo token JWT
+        const token = jwt.sign(payload, PRIVATE_KEY, { expiresIn: maxAge });
+
+        let userReturn = { id: userId, email, fullName, role, phone };
+
+        // Gửi phản hồi với thông tin người dùng và token
+        res.status(201).json({
+          message: "User registered successfully",
+          token,
+          expiresIn: maxAge,
+          user: userReturn,
+        });
+      });
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
@@ -527,60 +489,100 @@ app.post("/login", (req, res) => {
 
   try {
     // Tìm người dùng với email đã cung cấp
-    db.query(
-      "SELECT * FROM user WHERE email = ?",
-      [email],
-      async (err, results) => {
-        if (err) {
-          return res
-            .status(500)
-            .json({ message: "Database query error", error: err });
-        }
-
-        if (results.length === 0) {
-          return res.status(400).json({ message: "Không tìm thấy email" });
-        }
-
-        const user = results[0];
-
-        // So sánh mật khẩu đã cung cấp với mật khẩu đã mã hóa trong cơ sở dữ liệu
-        const match = await bcrypt.compare(password, user.password);
-
-        if (!match) {
-          return res.status(400).json({ message: "Mật khẩu không đúng" });
-        }
-
-        // Tạo payload cho token JWT
-        const payload = {
-          id: user.id,
-          fullName: user.fullName,
-          email: user.email,
-          role: user.role,
-        };
-
-        // Tạo token JWT
-        const token = jwt.sign(payload, PRIVATE_KEY, { expiresIn: maxAge });
-
-        // Thêm token vào header
-        res.setHeader("Authorization", "Bearer " + token);
-
-        // Gửi phản hồi với thông tin người dùng và token
-        res.status(200).json({
-          message: "Login successful",
-          token,
-          expiresIn: maxAge,
-          user: {
-            id: user.id,
-            email: user.email,
-            fullName: user.fullName,
-            role: user.role,
-            phone: user.phone,
-          },
-        });
+    db.query("SELECT * FROM user WHERE email = ?", [email], async (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: "Database query error", error: err });
       }
-    );
+
+      if (results.length === 0) {
+        return res.status(400).json({ message: "Không tìm thấy email" });
+      }
+
+      const user = results[0];
+
+      // So sánh mật khẩu đã cung cấp với mật khẩu đã mã hóa trong cơ sở dữ liệu
+      const match = await bcrypt.compare(password, user.password);
+
+      if (!match) {
+        return res.status(400).json({ message: "Mật khẩu không đúng" });
+      }
+
+      // Tạo payload cho token JWT
+      const payload = {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+      };
+
+      // Tạo token JWT
+      const token = jwt.sign(payload, PRIVATE_KEY, { expiresIn: maxAge });
+
+      // Thêm token vào header
+      res.setHeader("Authorization", "Bearer " + token);
+
+      // Gửi phản hồi với thông tin người dùng và token
+      res.status(200).json({
+        message: "Login successful",
+        token,
+        expiresIn: maxAge,
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          phone: user.phone,
+        },
+      });
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
+  }
+});
+
+// API đổi mật khẩu với ID người dùng từ URL
+app.put("/change-password/:id", async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const userId = req.params.id; // Lấy ID người dùng từ tham số URL
+
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({ message: "Cần cung cấp mật khẩu cũ và mật khẩu mới" });
+  }
+
+  try {
+    // Kiểm tra mật khẩu cũ
+    db.query("SELECT password FROM user WHERE id = ?", [userId], async (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: "Lỗi truy vấn cơ sở dữ liệu", error: err });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ message: "Người dùng không tồn tại" });
+      }
+
+      const user = results[0];
+
+      // So sánh mật khẩu cũ với mật khẩu đã mã hóa
+      const match = await bcrypt.compare(oldPassword, user.password);
+
+      if (!match) {
+        return res.status(400).json({ message: "Mật khẩu cũ không đúng" });
+      }
+
+      // Mã hóa mật khẩu mới
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Cập nhật mật khẩu mới vào cơ sở dữ liệu
+      db.query("UPDATE user SET password = ? WHERE id = ?", [hashedPassword, userId], (err, result) => {
+        if (err) {
+          return res.status(500).json({ message: "Lỗi cập nhật mật khẩu", error: err });
+        }
+
+        res.json({ message: "Mật khẩu đã được thay đổi thành công" });
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi máy chủ", error });
   }
 });
 
