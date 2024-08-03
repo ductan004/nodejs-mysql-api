@@ -450,7 +450,7 @@ app.delete("/admin/catalog/:id", adminAuth, (req, res) => {
 
 const bcrypt = require("bcrypt");
 const jwt = require("node-jsonwebtoken");
-const PRIVATE_KEY = fs.readFileSync("private-key.txt");
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const maxAge = 3 * 60 * 60; //3 giờ - thời gian sống của token
 
 // API đăng ký người dùng
