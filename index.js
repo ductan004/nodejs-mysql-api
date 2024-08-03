@@ -16,11 +16,11 @@ app.use("/images", express.static(path.join(__dirname, "public/images")));
 
 // Create a connection pool
 const db = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  port: 3306,
-  database: "react-asm",
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USERNAME || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_DBNAME || "react-asm",
+  port: process.env.DB_PORT || 3306,
 });
 
 // Fetch products with optional limit
