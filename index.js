@@ -20,7 +20,8 @@ const storage = multer.diskStorage({
     cb(null, file.originalname);
   },
 });
-// kiem tra co phai file hinh ko
+
+// Kiểm tra có phải là file hình không
 const fileFilter = (req, file, cb) => {
   const fileTypes = /jpeg|jpg|png|gif|webp/;
   const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
@@ -29,7 +30,7 @@ const fileFilter = (req, file, cb) => {
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb(new Error("Only images are allowed (jpeg, jpg, png, gif,webp)"));
+    cb(new Error("Chỉ cho phép hình ảnh (jpeg, jpg, png, gif, webp)"));
   }
 };
 
@@ -41,11 +42,11 @@ const upload = multer({
 const bcrypt = require("bcrypt");
 const jwt = require("node-jsonwebtoken");
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const maxAge = 3 * 60 * 60; //3 giờ - thời gian sống của token
+const maxAge = 3 * 60 * 60; // 3 giờ - thời gian sống của token
 
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 
-// Create a connection pool
+// Tạo kết nối đến cơ sở dữ liệu
 const db = mysql.createPool({
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USERNAME || "root",
@@ -54,46 +55,46 @@ const db = mysql.createPool({
   port: process.env.DB_PORT || 3306,
 });
 
-// Fetch products with optional limit
+// Lấy sản phẩm với giới hạn tùy chọn
 app.get("/product/:limi?", (req, res) => {
   let limi = parseInt(req.params.limi || 6);
   let sql = `SELECT * FROM product ORDER BY created_at desc LIMIT 0, ?`;
   db.query(sql, [limi], (err, data) => {
     if (err) {
-      res.json({ thongbao: "loi lay sp", err });
+      res.json({ thongbao: "Lỗi lấy sản phẩm", err });
     } else {
       res.json(data);
     }
   });
 });
 
-// Product hot
+// Sản phẩm hot
 app.get("/productHot/:limi?", (req, res) => {
   let limi = parseInt(req.params.limi || 8);
   let sql = `SELECT * FROM product WHERE hot = 1 ORDER BY created_at desc LIMIT 0, ?`;
   db.query(sql, [limi], (err, data) => {
     if (err) {
-      res.json({ thongbao: "loi lay sp hot", err });
+      res.json({ thongbao: "Lỗi lấy sản phẩm hot", err });
     } else {
       res.json(data);
     }
   });
 });
 
-// Product sale
+// Sản phẩm giảm giá
 app.get("/productSale/:limi?", (req, res) => {
   let limi = parseInt(req.params.limi || 8);
   let sql = `SELECT * FROM product WHERE sale = 1 ORDER BY created_at desc LIMIT 0, ?`;
   db.query(sql, [limi], (err, data) => {
     if (err) {
-      res.json({ thongbao: "loi lay sp sale", err });
+      res.json({ thongbao: "Lỗi lấy sản phẩm giảm giá", err });
     } else {
       res.json(data);
     }
   });
 });
 
-// Fetch product details by id
+// Lấy chi tiết sản phẩm theo ID
 app.get("/productDetail/:id", (req, res) => {
   let id = parseInt(req.params.id || 0);
   if (isNaN(id) || id <= 0) {
@@ -103,61 +104,61 @@ app.get("/productDetail/:id", (req, res) => {
   let sql = `SELECT product.*, catalog.name as catalog_name FROM product JOIN catalog ON product.id_catalog = catalog.id WHERE product.id = ?`;
   db.query(sql, [id], (err, data) => {
     if (err) {
-      res.json({ thongbao: "Lỗi lấy 1 sp", err });
+      res.json({ thongbao: "Lỗi lấy sản phẩm", err });
     } else {
       res.json(data[0]);
     }
   });
 });
 
-// Fetch products by catalog id
+// Lấy sản phẩm theo ID danh mục
 app.get("/productCatalog/:id_catalog/:limi?", (req, res) => {
   let limi = parseInt(req.params.limi || 6);
   let id_catalog = parseInt(req.params.id_catalog);
   if (isNaN(id_catalog) || id_catalog <= 0) {
-    res.json({ "thong bao": "Không biết loai", id_catalog: id_catalog });
+    res.json({ "thong bao": "Không biết loại", id_catalog: id_catalog });
     return;
   }
   let sql = `SELECT * FROM product WHERE id_catalog = ? ORDER BY id desc LIMIT 0, ?`;
   db.query(sql, [id_catalog, limi], (err, data) => {
     if (err) {
-      res.json({ thongbao: "Lỗi lấy sp trong loai", err });
+      res.json({ thongbao: "Lỗi lấy sản phẩm trong loại", err });
     } else {
       res.json(data);
     }
   });
 });
 
-// Fetch catalog details by id
+// Lấy chi tiết danh mục theo ID
 app.get("/catalog/:id_catalog", (req, res) => {
   let id_catalog = parseInt(req.params.id_catalog);
   if (isNaN(id_catalog) || id_catalog <= 0) {
-    res.json({ "thong bao": "Không biết loai", id_catalog: id_catalog });
+    res.json({ "thong bao": "Không biết loại", id_catalog: id_catalog });
     return;
   }
   let sql = `SELECT * FROM catalog WHERE id = ?`;
   db.query(sql, [id_catalog], (err, data) => {
     if (err) {
-      res.json({ thongbao: "Lỗi lấy loai", err });
+      res.json({ thongbao: "Lỗi lấy loại", err });
     } else {
       res.json(data[0]);
     }
   });
 });
 
-// Fetch all catalogs
+// Lấy tất cả danh mục
 app.get("/catalog", (req, res) => {
   let sql = `SELECT * FROM catalog ORDER BY id`;
   db.query(sql, (err, data) => {
     if (err) {
-      res.json({ thongbao: "Lỗi lấy loai", err });
+      res.json({ thongbao: "Lỗi lấy loại", err });
     } else {
       res.json(data);
     }
   });
 });
 
-// Fetch related products by product id
+// Lấy sản phẩm liên quan theo ID sản phẩm
 app.get("/productRelated/:id", (req, res) => {
   let id = parseInt(req.params.id || 0);
   if (isNaN(id) || id <= 0) {
@@ -196,10 +197,10 @@ app.post("/orders", (req, res) => {
   let sql = `INSERT INTO orders SET ?`;
   db.query(sql, data, (err, result) => {
     if (err) {
-      res.json({ id: -1, thongbao: "Loi luu don hang", err });
+      res.json({ id: -1, thongbao: "Lỗi lưu đơn hàng", err });
     } else {
       const id = result.insertId;
-      res.json({ id: id, thongbao: "da luu don hang" });
+      res.json({ id: id, thongbao: "Đã lưu đơn hàng" });
     }
   });
 });
@@ -209,22 +210,22 @@ app.post("/order_detail", (req, res) => {
   let sql = `INSERT INTO order_detail SET ?`;
   db.query(sql, data, (err, result) => {
     if (err) {
-      res.json({ thongbao: "Loi luu don hang chi tiet", err });
+      res.json({ thongbao: "Lỗi lưu đơn hàng chi tiết", err });
     } else {
       res.json({
         product_id: data.product_id,
-        thongbao: "da luu don hang chi tiet",
+        thongbao: "Đã lưu đơn hàng chi tiết",
       });
     }
   });
 });
 
-// admin
+// Admin
 app.get("/admin/product", adminAuth, (req, res) => {
   let limi = parseInt(req.query.limi || 10);
   let sql = `SELECT * FROM product ORDER BY created_at desc LIMIT 0,?`;
   db.query(sql, [limi], (err, data) => {
-    if (err) req.status(500).json({ error: "loi lay san pham" }, err);
+    if (err) req.status(500).json({ error: "Lỗi lấy sản phẩm" }, err);
     else res.json(data);
   });
 });
@@ -232,363 +233,221 @@ app.get("/admin/product", adminAuth, (req, res) => {
 app.get("/admin/product/:id", adminAuth, (req, res) => {
   let id = parseInt(req.params.id);
   if (id <= 0 || isNaN(id)) {
-    res.json({ error: "Invalid product ID", id: id });
+    res.json({ error: "ID sản phẩm không hợp lệ", id: id });
     return;
   }
   let sql = `SELECT * FROM product WHERE id = ?`;
   db.query(sql, id, (err, data) => {
     if (err) {
-      res.json({ error: "Error fetching product", details: err });
+      res.json({ error: "Lỗi lấy sản phẩm", details: err });
     } else if (data.length === 0) {
-      res.json({ error: "Product not found", id: id });
+      res.json({ error: "Sản phẩm không tìm thấy", id: id });
     } else {
       res.json(data[0]);
     }
   });
 });
 
-// add product
-app.post("/admin/product", adminAuth, upload.single("img"), (req, res) => {
-  const { id_catalog, name, price, price_sale, sale, hot, des } = req.body;
-  let img = req.file;
-
-  if (!id_catalog || !name || !img) {
-    return res
-      .status(400)
-      .json({ error: "id_catalog, name, and img are required" });
-  }
-
-  const productData = {
-    id_catalog,
-    name,
-    price: price || 0,
-    price_sale: price_sale || 0,
-    sale: sale || 0,
-    hot: hot || 0,
-    img: img.filename,
-    des: des || null,
-    created_at: new Date(),
-  };
-
-  const sql = "INSERT INTO product SET ?";
-  db.query(sql, productData, (err, result) => {
+app.post("/admin/product", upload.single("image"), adminAuth, (req, res) => {
+  let data = req.body;
+  let image = req.file ? req.file.originalname : null;
+  data.image = image;
+  let sql = `INSERT INTO product SET ?`;
+  db.query(sql, data, (err, result) => {
     if (err) {
-      return res
-        .status(500)
-        .json({ error: "Failed to add product", details: err });
-    }
-    res.json({
-      message: "Product added successfully",
-      productId: result.insertId,
-    });
-  });
-});
-
-app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
-  const { id_catalog, name, price, price_sale, sale, hot, des } = req.body;
-  const { id } = req.params;
-  let img = req.file;
-
-  if (!id_catalog || !name) {
-    return res.status(400).json({ error: "id_catalog and name are required" });
-  }
-
-  // Fetch current product details to get the existing values
-  const selectSql = "SELECT img FROM product WHERE id = ?";
-  db.query(selectSql, [id], (err, results) => {
-    if (err) {
-      return res
-        .status(500)
-        .json({ error: "Failed to retrieve product details" });
-    }
-
-    if (results.length === 0) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-
-    const product = results[0];
-    const oldImagePath = path.join(
-      __dirname,
-      "public",
-      "images",
-      "product",
-      product.img
-    );
-
-    const productData = {
-      id_catalog,
-      name,
-      price: price || product.price,
-      price_sale: price_sale || product.price_sale,
-      sale: sale !== undefined ? sale : product.sale,
-      hot: hot !== undefined ? hot : product.hot,
-      des: des || product.des,
-      created_at: new Date(),
-    };
-
-    if (img) {
-      productData.img = img.filename;
-    }
-
-    const updateSql = "UPDATE product SET ? WHERE id = ?";
-    db.query(updateSql, [productData, id], (err, result) => {
-      if (err) {
-        return res
-          .status(500)
-          .json({ error: "Failed to update product", details: err });
-      }
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Product not found" });
-      }
-
-      // If new image is provided, delete the old image
-      if (img) {
-        fs.unlink(oldImagePath, (err) => {
-          if (err) {
-            console.error("Failed to delete old image file:", err);
-          }
-        });
-      }
-
-      res.json({ message: "Product updated successfully" });
-    });
-  });
-});
-
-// Delete product endpoint
-app.delete("/admin/product/:id", adminAuth, (req, res) => {
-  const productId = parseInt(req.params.id);
-  // Fetch the product details to get the image filename
-  const selectSql = "SELECT img FROM product WHERE id = ?";
-  db.query(selectSql, [productId], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: "Failed to retrieve product" });
-    }
-
-    if (results.length === 0) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-    const product = results[0];
-    const imagePath = path.join(
-      __dirname,
-      "public",
-      "images",
-      "product",
-      product.img
-    );
-
-    // Delete the product from the database
-    const deleteSql = "DELETE FROM product WHERE id = ?";
-    db.query(deleteSql, [productId], (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: "Failed to delete product" });
-      }
-      // Delete the image file
-      fs.unlink(imagePath, (err) => {
-        if (err) {
-          console.error("Failed to delete image file:", err);
-        }
-        res.json({ message: "Product deleted successfully" });
+      res.json({ id: -1, thongbao: "Lỗi lưu sản phẩm", err });
+    } else {
+      res.json({
+        id: result.insertId,
+        thongbao: "Đã lưu sản phẩm",
+        image: image,
       });
-    });
+    }
   });
 });
 
-// catalog
-
-app.get("/admin/catalog", adminAuth, (req, res) => {
-  let sql = `SELECT * FROM catalog ORDER BY id`;
-  db.query(sql, (err, data) => {
-    if (err) return res.status(500).json({ error: err });
-    else res.json(data);
-  });
-});
-
-app.get("/admin/catalog/:id", adminAuth, (req, res) => {
+app.put("/admin/product/:id", upload.single("image"), adminAuth, (req, res) => {
   let id = parseInt(req.params.id);
-  if (id <= 0) {
-    res.status(500).json({ message: "Khong biet danh muc", id: id });
+  let data = req.body;
+  let image = req.file ? req.file.originalname : null;
+  if (image) data.image = image;
+
+  let sql = `UPDATE product SET ? WHERE id = ?`;
+  db.query(sql, [data, id], (err, result) => {
+    if (err) {
+      res.json({ thongbao: "Lỗi cập nhật sản phẩm", err });
+    } else {
+      res.json({ thongbao: "Cập nhật sản phẩm thành công", image: image });
+    }
+  });
+});
+
+app.delete("/admin/product/:id", adminAuth, (req, res) => {
+  let id = parseInt(req.params.id);
+  if (id <= 0 || isNaN(id)) {
+    res.json({ error: "ID sản phẩm không hợp lệ", id: id });
     return;
   }
-  let sql = `SELECT * FROM catalog WHERE id = ?`;
-  db.query(sql, id, (err, data) => {
+  db.query(`SELECT image FROM product WHERE id = ?`, [id], (err, data) => {
     if (err) {
-      res.json({ error: "Error fetching product", details: err });
-    } else if (data.length === 0) {
-      res.json({ error: "Catalog not found", id: id });
-    } else {
-      res.json(data[0]);
+      res.json({ error: "Lỗi lấy hình ảnh sản phẩm", details: err });
+      return;
     }
+    if (data.length === 0) {
+      res.json({ error: "Sản phẩm không tìm thấy", id: id });
+      return;
+    }
+
+    const imagePath = `public/images/product/${data[0].image}`;
+    db.query(`DELETE FROM product WHERE id = ?`, [id], (err, result) => {
+      if (err) {
+        res.json({ error: "Lỗi xóa sản phẩm", details: err });
+      } else {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+        res.json({ message: "Sản phẩm đã được xóa", id: id });
+      }
+    });
   });
 });
 
 app.post("/admin/catalog", adminAuth, (req, res) => {
-  const { name } = req.body;
-  const data = {
-    name,
-  };
+  let data = req.body;
   let sql = `INSERT INTO catalog SET ?`;
-  db.query(sql, data, (err, data) => {
-    if (err) res.status(404).json({ message: "Error Insert catalog", err });
-    else res.json({ message: "success", id: data.insertId });
+  db.query(sql, data, (err, result) => {
+    if (err) {
+      res.json({ id: -1, thongbao: "Lỗi lưu danh mục", err });
+    } else {
+      res.json({ id: result.insertId, thongbao: "Đã lưu danh mục" });
+    }
   });
 });
 
 app.put("/admin/catalog/:id", adminAuth, (req, res) => {
   let id = parseInt(req.params.id);
-  const data = req.body;
+  let data = req.body;
   let sql = `UPDATE catalog SET ? WHERE id = ?`;
-  db.query(sql, [data, id], (err, data) => {
-    if (err) res.status(404).json({ message: "Error Edit catalog", err });
-    else res.json({ message: "success" });
+  db.query(sql, [data, id], (err, result) => {
+    if (err) {
+      res.json({ thongbao: "Lỗi cập nhật danh mục", err });
+    } else {
+      res.json({ thongbao: "Cập nhật danh mục thành công" });
+    }
   });
 });
 
 app.delete("/admin/catalog/:id", adminAuth, (req, res) => {
   let id = parseInt(req.params.id);
+  if (id <= 0 || isNaN(id)) {
+    res.json({ error: "ID danh mục không hợp lệ", id: id });
+    return;
+  }
   let sql = `DELETE FROM catalog WHERE id = ?`;
-  db.query(sql, id, (err, data) => {
-    if (err) res.status(404).json({ message: "Error delete catalog", err });
-    else res.json({ message: "sussecs" });
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      res.json({ error: "Lỗi xóa danh mục", details: err });
+    } else {
+      res.json({ message: "Danh mục đã được xóa", id: id });
+    }
   });
 });
 
-// API đăng ký người dùng
-app.post("/register", async (req, res) => {
-  const { email, password, fullName, role = 0, phone } = req.body;
-
-  // Kiểm tra tất cả các trường có được cung cấp hay không
+app.post("/register", (req, res) => {
+  const { email, password, fullName, phone } = req.body;
   if (!email || !password || !fullName || !phone) {
-    return res
-      .status(400)
-      .json({ message: "All fields except role are required" });
+    res.status(400).json({ error: "Thiếu thông tin" });
+    return;
   }
 
-  try {
-    // Kiểm tra xem email đã được đăng ký chưa
-    db.query(
-      "SELECT id FROM user WHERE email = ?",
-      [email],
-      async (err, results) => {
-        if (err) {
-          return res
-            .status(500)
-            .json({ message: "Database query error", error: err });
-        }
+  db.query("SELECT * FROM user WHERE email = ?", [email], (err, data) => {
+    if (err) {
+      res.status(500).json({ error: "Lỗi cơ sở dữ liệu", details: err });
+      return;
+    }
+    if (data.length > 0) {
+      res.status(400).json({ error: "Email đã được sử dụng" });
+      return;
+    }
 
-        if (results.length > 0) {
-          return res.status(400).json({ message: "Email đã tồn tại" });
-        }
-
-        // Mã hóa mật khẩu
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Thêm người dùng mới vào cơ sở dữ liệu
-        const user = { email, password: hashedPassword, fullName, role, phone };
-
-        db.query("INSERT INTO user SET ?", user, (err, result) => {
-          if (err) {
-            return res
-              .status(500)
-              .json({ message: "Database insertion error", error: err });
-          }
-
-          const userId = result.insertId; // Lấy ID của người dùng mới
-          const payload = { id: userId, fullName, email, role };
-
-          // Tạo token JWT
-          const token = jwt.sign(payload, PRIVATE_KEY, { expiresIn: maxAge });
-
-          let userReturn = { id: userId, email, fullName, role, phone };
-
-          // Gửi phản hồi với thông tin người dùng và token
-          res.status(201).json({
-            message: "User registered successfully",
-            token,
-            expiresIn: maxAge,
-            user: userReturn,
-          });
-        });
+    bcrypt.hash(password, 10, (err, hashedPassword) => {
+      if (err) {
+        res.status(500).json({ error: "Lỗi mã hóa mật khẩu", details: err });
+        return;
       }
-    );
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
+
+      db.query(
+        "INSERT INTO user (email, password, fullName, phone) VALUES (?, ?, ?, ?)",
+        [email, hashedPassword, fullName, phone],
+        (err, result) => {
+          if (err) {
+            res
+              .status(500)
+              .json({ error: "Lỗi đăng ký người dùng", details: err });
+          } else {
+            res
+              .status(201)
+              .json({ message: "Đăng ký thành công", userId: result.insertId });
+          }
+        }
+      );
+    });
+  });
 });
 
-// API đăng nhập người dùng
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-
-  // Kiểm tra tất cả các trường có được cung cấp hay không
   if (!email || !password) {
-    return res.status(400).json({ message: "Email and password are required" });
+    res.status(400).json({ error: "Thiếu thông tin" });
+    return;
   }
 
-  try {
-    // Tìm người dùng với email đã cung cấp
-    db.query(
-      "SELECT * FROM user WHERE email = ?",
-      [email],
-      async (err, results) => {
-        if (err) {
-          return res
-            .status(500)
-            .json({ message: "Database query error", error: err });
-        }
+  db.query("SELECT * FROM user WHERE email = ?", [email], (err, data) => {
+    if (err) {
+      res.status(500).json({ error: "Lỗi cơ sở dữ liệu", details: err });
+      return;
+    }
+    if (data.length === 0) {
+      res.status(400).json({ error: "Email không tìm thấy" });
+      return;
+    }
 
-        if (results.length === 0) {
-          return res.status(400).json({ message: "Không tìm thấy email" });
-        }
-
-        const user = results[0];
-
-        // So sánh mật khẩu đã cung cấp với mật khẩu đã mã hóa trong cơ sở dữ liệu
-        const match = await bcrypt.compare(password, user.password);
-
-        if (!match) {
-          return res.status(400).json({ message: "Mật khẩu không đúng" });
-        }
-
-        // Tạo payload cho token JWT
-        const payload = {
-          id: user.id,
-          fullName: user.fullName,
-          email: user.email,
-          role: user.role,
-        };
-
-        // Tạo token JWT
-        const token = jwt.sign(payload, PRIVATE_KEY, { expiresIn: maxAge });
-
-        // Thêm token vào header
-        res.setHeader("Authorization", "Bearer " + token);
-
-        // Gửi phản hồi với thông tin người dùng và token
-        res.status(200).json({
-          message: "Login successful",
-          token,
-          expiresIn: maxAge,
-          user: {
-            id: user.id,
-            email: user.email,
-            fullName: user.fullName,
-            role: user.role,
-            phone: user.phone,
-          },
-        });
+    const user = data[0];
+    bcrypt.compare(password, user.password, (err, isMatch) => {
+      if (err) {
+        res.status(500).json({ error: "Lỗi so sánh mật khẩu", details: err });
+        return;
       }
-    );
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
+      if (!isMatch) {
+        res.status(400).json({ error: "Mật khẩu không đúng" });
+        return;
+      }
+
+      const payload = {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+      };
+      const token = jwt.sign(payload, PRIVATE_KEY, { expiresIn: maxAge });
+
+      res.status(200).json({
+        message: "Đăng nhập thành công",
+        token,
+        expiresIn: maxAge,
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          phone: user.phone,
+        },
+      });
+    });
+  });
 });
 
-app.get("/", (req, res) => {
-  res.json({ message: "ket noi thanh cong" });
-});
-
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Máy chủ đang chạy trên cổng ${PORT}`);
 });
