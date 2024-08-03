@@ -12,6 +12,37 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "public/images/product");
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+// kiem tra co phai file hinh ko
+const fileFilter = (req, file, cb) => {
+  const fileTypes = /jpeg|jpg|png|gif|webp/;
+  const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = fileTypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error("Only images are allowed (jpeg, jpg, png, gif,webp)"));
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+});
+
+const bcrypt = require("bcrypt");
+const jwt = require("node-jsonwebtoken");
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const maxAge = 3 * 60 * 60; //3 giờ - thời gian sống của token
+
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 
 // Create a connection pool
@@ -214,32 +245,6 @@ app.get("/admin/product/:id", adminAuth, (req, res) => {
       res.json(data[0]);
     }
   });
-});
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/images/product");
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  },
-});
-// kiem tra co phai file hinh ko
-const fileFilter = (req, file, cb) => {
-  const fileTypes = /jpeg|jpg|png|gif|webp/;
-  const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = fileTypes.test(file.mimetype);
-
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    cb(new Error("Only images are allowed (jpeg, jpg, png, gif,webp)"));
-  }
-};
-
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
 });
 
 // add product
@@ -447,11 +452,6 @@ app.delete("/admin/catalog/:id", adminAuth, (req, res) => {
     else res.json({ message: "sussecs" });
   });
 });
-
-const bcrypt = require("bcrypt");
-const jwt = require("node-jsonwebtoken");
-const PRIVATE_KEY = fs.readFileSync("private-key.txt");
-const maxAge = 3 * 60 * 60; //3 giờ - thời gian sống của token
 
 // API đăng ký người dùng
 app.post("/register", async (req, res) => {
