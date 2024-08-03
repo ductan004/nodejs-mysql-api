@@ -41,7 +41,7 @@ const upload = multer({
 
 const bcrypt = require("bcrypt");
 const jwt = require("node-jsonwebtoken");
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const privateKey = process.env.PRIVATE_KEY;
 const maxAge = 3 * 60 * 60; // 3 giờ - thời gian sống của token
 
 app.use("/images", express.static(path.join(__dirname, "public/images")));
@@ -429,7 +429,7 @@ app.post("/login", (req, res) => {
         email: user.email,
         role: user.role,
       };
-      const token = jwt.sign(payload, PRIVATE_KEY, { expiresIn: maxAge });
+      const token = jwt.sign(payload, privateKey, { expiresIn: maxAge });
 
       res.status(200).json({
         message: "Đăng nhập thành công",

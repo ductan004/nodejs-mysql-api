@@ -1,6 +1,6 @@
 const jwt = require("node-jsonwebtoken");
 const fs = require("fs");
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const privateKey = process.env.PRIVATE_KEY;
 
 exports.adminAuth = (req, res, next) => {
   let token = req.headers.authorization;
@@ -11,7 +11,7 @@ exports.adminAuth = (req, res, next) => {
       .json({ thongbao: "Không có token! Không phận sự miễn vào :)" });
   }
   token = token.split(" ")[1];
-  jwt.verify(token, PRIVATE_KEY, (err, datadDecoded) => {
+  jwt.verify(token, privateKey, (err, datadDecoded) => {
     if (err)
       return res.status(401).json({ thongbao: "Lỗi test token: " + err });
     // console.log("Decoded Data:", datadDecoded); // Kiểm tra thông tin token giải mã
