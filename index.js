@@ -353,7 +353,7 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
         if (error) {
           console.error("Failed to delete image file:", error);
         }
-        res.json({ message: "Product deleted successfully" });
+        res.json({ message: "Product deleted successfully", oldImagePublicId: oldImagePublicId });
       });
     });
   });
