@@ -282,7 +282,9 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
 
     const product = results[0];
     const oldImagePath = product.img; // Cloudinary URL is not a file path
-    const oldImagePublicId = oldImagePath.split("/").pop().split(".")[0]; // Extract public ID
+
+    // Extract public ID from the Cloudinary URL
+    const oldImagePublicId = oldImagePath ? oldImagePath.split("/").pop().split(".")[0] : null;
 
     const productData = {
       id_catalog,
@@ -310,7 +312,7 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
 
       // If new image is provided, delete the old image
       if (img && oldImagePath) {
-        cloudinary.uploader.destroy(oldImagePublicId, (error, result) => {
+        cloudinary.uploader.destroy(oldImagePublicId, (error) => {
           if (error) {
             console.error("Failed to delete old image file:", error);
           }
@@ -335,10 +337,12 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
     if (results.length === 0) {
       return res.status(404).json({ error: "Product not found" });
     }
+
     const product = results[0];
-    const imagePath = product.img; // Cloudinary URL is not a file path
+    const imagePath = product.img;
+
     // Extract public ID from the Cloudinary URL
-    const imagePublicId = imagePath.split("/").pop().split(".")[0];
+    const imagePublicId = imagePath ? imagePath.split("/").pop().split(".")[0] : null;
     // Delete the product from the database
     const deleteSql = "DELETE FROM product WHERE id = ?";
     db.query(deleteSql, [productId], (err, results) => {
