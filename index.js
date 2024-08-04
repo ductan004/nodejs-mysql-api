@@ -24,7 +24,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "product_images", // Thư mục trên Cloudinary
+    folder: "websitUpload/product",
     allowed_formats: ["jpeg", "jpg", "png", "gif", "webp"],
     public_id: (req, file) => Date.now().toString() + "-" + file.originalname, // Tạo tên file duy nhất
   },
@@ -311,8 +311,8 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
       }
 
       // If new image is provided, delete the old image
-      if (img && oldImagePath) {
-        cloudinary.uploader.destroy(oldImagePublicId, (error) => {
+      if (img) {
+        cloudinary.uploader.destroy(oldImagePath, (error) => {
           if (error) {
             console.error("Failed to delete old image file:", error);
           }
@@ -339,10 +339,8 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
     }
 
     const product = results[0];
-    const imagePath = product.img;
+    const imagePath = product.img; // Cloudinary URL is not a file path
 
-    // Extract public ID from the Cloudinary URL
-    const imagePublicId = imagePath ? imagePath.split("/").pop().split(".")[0] : null;
     // Delete the product from the database
     const deleteSql = "DELETE FROM product WHERE id = ?";
     db.query(deleteSql, [productId], (err, results) => {
@@ -350,7 +348,7 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
         return res.status(500).json({ error: "Failed to delete product" });
       }
       // Delete the image file
-      cloudinary.uploader.destroy(imagePublicId, (error) => {
+      cloudinary.uploader.destroy(imagePath, (error) => {
         if (error) {
           console.error("Failed to delete image file:", error);
         }
