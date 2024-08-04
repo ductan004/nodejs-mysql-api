@@ -235,7 +235,7 @@ const upload = multer({
 });
 
 // add product
-app.post("/admin/product", upload.single("img"), (req, res) => {
+app.post("/admin/product", adminAuth, upload.single("img"), (req, res) => {
   const { id_catalog, name, price, price_sale, sale, hot, des } = req.body;
   let img = req.file;
 
