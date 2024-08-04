@@ -3,16 +3,34 @@ const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
 const app = express();
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 require("dotenv").config();
 app.use(cors());
 app.use(express.json());
 
-const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-app.use("/images", express.static(path.join(__dirname, "./public/images")));
+// Cấu hình Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Cấu hình multer-storage-cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "product_images", // Thư mục trên Cloudinary
+    allowed_formats: ["jpeg", "jpg", "png", "gif", "webp"],
+    public_id: (req, file) => Date.now().toString() + "-" + file.originalname, // Tạo tên file duy nhất
+  },
+});
+
+const upload = multer({ storage: storage });
 
 // Create a connection pool
 const db = mysql.createPool({
@@ -208,32 +226,6 @@ app.get("/admin/product/:id", adminAuth, (req, res) => {
   });
 });
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "./public/images/product");
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  },
-});
-// kiem tra co phai file hinh ko
-const fileFilter = (req, file, cb) => {
-  const fileTypes = /jpeg|jpg|png|gif|webp/;
-  const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = fileTypes.test(file.mimetype);
-
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    cb(new Error("Only images are allowed (jpeg, jpg, png, gif,webp)"));
-  }
-};
-
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-});
-
 // add product
 app.post("/admin/product", adminAuth, upload.single("img"), (req, res) => {
   const { id_catalog, name, price, price_sale, sale, hot, des } = req.body;
@@ -250,7 +242,7 @@ app.post("/admin/product", adminAuth, upload.single("img"), (req, res) => {
     price_sale: price_sale || 0,
     sale: sale || 0,
     hot: hot || 0,
-    img: img.filename,
+    img: img.path, // URL của ảnh từ Cloudinary
     des: des || null,
     created_at: new Date(),
   };
@@ -263,6 +255,7 @@ app.post("/admin/product", adminAuth, upload.single("img"), (req, res) => {
     res.json({
       message: "Product added successfully",
       productId: result.insertId,
+      imageUrl: img.path, // Trả về URL của ảnh
     });
   });
 });
@@ -288,7 +281,7 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
     }
 
     const product = results[0];
-    const oldImagePath = path.join(__dirname, "public", "images", "product", product.img);
+    const oldImagePath = product.img; // Cloudinary URL is not a file path
 
     const productData = {
       id_catalog,
@@ -302,7 +295,7 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
     };
 
     if (img) {
-      productData.img = img.filename;
+      productData.img = img.path;
     }
 
     const updateSql = "UPDATE product SET ? WHERE id = ?";
@@ -316,9 +309,9 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
 
       // If new image is provided, delete the old image
       if (img) {
-        fs.unlink(oldImagePath, (err) => {
-          if (err) {
-            console.error("Failed to delete old image file:", err);
+        cloudinary.uploader.destroy(oldImagePath, (error, result) => {
+          if (error) {
+            console.error("Failed to delete old image file:", error);
           }
         });
       }
@@ -342,7 +335,7 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
       return res.status(404).json({ error: "Product not found" });
     }
     const product = results[0];
-    const imagePath = path.join(__dirname, "public", "images", "product", product.img);
+    const imagePath = product.img; // Cloudinary URL is not a file path
 
     // Delete the product from the database
     const deleteSql = "DELETE FROM product WHERE id = ?";
@@ -351,9 +344,9 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
         return res.status(500).json({ error: "Failed to delete product" });
       }
       // Delete the image file
-      fs.unlink(imagePath, (err) => {
-        if (err) {
-          console.error("Failed to delete image file:", err);
+      cloudinary.uploader.destroy(imagePath, (error) => {
+        if (error) {
+          console.error("Failed to delete image file:", error);
         }
         res.json({ message: "Product deleted successfully" });
       });
