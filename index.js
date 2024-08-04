@@ -282,6 +282,7 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
 
     const product = results[0];
     const oldImagePath = product.img; // Cloudinary URL is not a file path
+    const oldImagePublicId = oldImagePath.split("/").pop().split(".")[0]; // Extract public ID
 
     const productData = {
       id_catalog,
@@ -308,8 +309,8 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
       }
 
       // If new image is provided, delete the old image
-      if (img) {
-        cloudinary.uploader.destroy(oldImagePath, (error, result) => {
+      if (img && oldImagePath) {
+        cloudinary.uploader.destroy(oldImagePublicId, (error, result) => {
           if (error) {
             console.error("Failed to delete old image file:", error);
           }
@@ -336,7 +337,8 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
     }
     const product = results[0];
     const imagePath = product.img; // Cloudinary URL is not a file path
-
+    // Extract public ID from the Cloudinary URL
+    const imagePublicId = imagePath.split("/").pop().split(".")[0];
     // Delete the product from the database
     const deleteSql = "DELETE FROM product WHERE id = ?";
     db.query(deleteSql, [productId], (err, results) => {
@@ -344,7 +346,7 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
         return res.status(500).json({ error: "Failed to delete product" });
       }
       // Delete the image file
-      cloudinary.uploader.destroy(imagePath, (error) => {
+      cloudinary.uploader.destroy(imagePublicId, (error) => {
         if (error) {
           console.error("Failed to delete image file:", error);
         }
