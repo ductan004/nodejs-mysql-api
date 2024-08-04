@@ -12,7 +12,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-app.use("/images", express.static(path.join(__dirname, "public/images")));
+app.use("/images", express.static(path.join(__dirname, "./public/images")));
 
 // Create a connection pool
 const db = mysql.createPool({
@@ -210,7 +210,7 @@ app.get("/admin/product/:id", adminAuth, (req, res) => {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "public/images/product");
+    cb(null, "./public/images/product");
   },
   filename: (req, file, cb) => {
     cb(null, file.originalname);
