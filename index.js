@@ -5,7 +5,7 @@ const cors = require("cors");
 const app = express();
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
-
+const multer = require("multer");
 require("dotenv").config();
 app.use(cors());
 app.use(express.json());
