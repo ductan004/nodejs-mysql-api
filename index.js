@@ -286,8 +286,8 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
     const productData = {
       id_catalog,
       name,
-      price: price || product.price,
-      price_sale: price_sale || product.price_sale,
+      price: price !== undefined ? price : product.price,
+      price_sale: price_sale !== undefined ? price_sale : product.price_sale,
       sale: sale !== undefined ? sale : product.sale,
       hot: hot !== undefined ? hot : product.hot,
       des: des || product.des,
