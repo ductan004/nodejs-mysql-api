@@ -10,7 +10,6 @@ require("dotenv").config();
 app.use(cors());
 app.use(express.json());
 
-const path = require("path");
 const fs = require("fs");
 
 // Cấu hình Cloudinary
@@ -284,7 +283,7 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
     const oldImagePath = product.img; // Cloudinary URL is not a file path
 
     // Extract public ID from the Cloudinary URL
-    const oldImagePublicId = oldImagePath ? oldImagePath.split("/").pop().split(".")[0] : null;
+    const oldImagePublicId = oldImagePath ? oldImagePath.split("/").pop().split(".").slice(0, -1).join(".") : null;
 
     const productData = {
       id_catalog,
@@ -341,7 +340,8 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
     const product = results[0];
     const imagePath = product.img; // Cloudinary URL is not a file path
 
-    const oldImagePublicId = imagePath ? imagePath.split("/").pop().split(".")[0] : null;
+    const oldImagePublicId = imagePath ? imagePath.split("/").pop().split(".").slice(0, -1).join(".") : null;
+
     // Delete the product from the database
     const deleteSql = "DELETE FROM product WHERE id = ?";
     db.query(deleteSql, [productId], (err, results) => {
