@@ -25,7 +25,12 @@ const storage = new CloudinaryStorage({
   params: {
     folder: "websitUpload/product",
     allowed_formats: ["jpeg", "jpg", "png", "gif", "webp"],
-    public_id: (req, file) => Date.now().toString() + "-" + file.originalname, // Tạo tên file duy nhất
+    public_id: (req, file) => {
+      // Loại bỏ đuôi mở rộng từ originalname
+      // Date.now().toString() + "-" + file.originalname, // Tạo tên file duy nhất
+      const nameWithoutExt = file.originalname.split(".").slice(0, -1).join(".");
+      return `${Date.now()}-${nameWithoutExt}`;
+    },
   },
 });
 
