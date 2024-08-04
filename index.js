@@ -286,9 +286,11 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
 
     const product = results[0];
     const oldImagePath = product.img; // Cloudinary URL is not a file path
-
-    // Extract public ID from the Cloudinary URL
-    const oldImagePublicId = oldImagePath ? oldImagePath.split("/").pop().split(".").slice(0, -1).join(".") : null;
+    const publicId = oldImagePath
+      .split("/")
+      .slice(7)
+      .join("/")
+      .replace(/\.[^/.]+$/, "");
 
     const productData = {
       id_catalog,
@@ -316,7 +318,7 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
 
       // If new image is provided, delete the old image
       if (img) {
-        cloudinary.uploader.destroy(oldImagePublicId, (error) => {
+        cloudinary.uploader.destroy(publicId, (error) => {
           if (error) {
             console.error("Failed to delete old image file:", error);
           }
@@ -343,9 +345,13 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
     }
 
     const product = results[0];
-    const imagePath = product.img; // Cloudinary URL is not a file path
+    const oldImagePath = product.img; // Cloudinary URL is not a file path
 
-    const oldImagePublicId = imagePath ? imagePath.split("/").pop().split(".").slice(0, -1).join(".") : null;
+    const publicId = oldImagePath
+      .split("/")
+      .slice(7)
+      .join("/")
+      .replace(/\.[^/.]+$/, "");
 
     // Delete the product from the database
     const deleteSql = "DELETE FROM product WHERE id = ?";
@@ -354,11 +360,11 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
         return res.status(500).json({ error: "Failed to delete product" });
       }
       // Delete the image file
-      cloudinary.uploader.destroy(oldImagePublicId, (error) => {
+      cloudinary.uploader.destroy(publicId, (error) => {
         if (error) {
           console.error("Failed to delete image file:", error);
         }
-        res.json({ message: "Product deleted successfully", oldImagePublicId: oldImagePublicId });
+        res.json({ message: "Product deleted successfully", oldImagePublicId: publicId });
       });
     });
   });
