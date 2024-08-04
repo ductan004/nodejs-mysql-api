@@ -97,6 +97,32 @@ app.get("/productCatalog/:id_catalog/:limi?", (req, res) => {
   });
 });
 
+// Fetch related products by product id
+app.get("/productRelated/:id", (req, res) => {
+  let id = parseInt(req.params.id || 0);
+  if (isNaN(id) || id <= 0) {
+    res.json({ "thong bao": "Không biết sản phẩm", id: id });
+    return;
+  }
+
+  db.query("SELECT id_catalog FROM product WHERE id = ?", [id], (err, categoryData) => {
+    if (err) {
+      res.json({ thongbao: "Lỗi xảy ra khi lấy dữ liệu", err });
+    } else if (categoryData.length === 0) {
+      res.json({ thongbao: "Không tìm thấy sản phẩm" });
+    } else {
+      const id_catalog = categoryData[0].id_catalog;
+      db.query("SELECT * FROM product WHERE id_catalog = ? AND id != ?", [id_catalog, id], (err, relatedData) => {
+        if (err) {
+          res.json({ thongbao: "Lỗi xảy ra khi lấy dữ liệu", err });
+        } else {
+          res.json(relatedData);
+        }
+      });
+    }
+  });
+});
+
 // Fetch catalog details by id
 app.get("/catalog/:id_catalog", (req, res) => {
   let id_catalog = parseInt(req.params.id_catalog);
@@ -122,32 +148,6 @@ app.get("/catalog", (req, res) => {
       res.json({ thongbao: "Lỗi lấy loai", err });
     } else {
       res.json(data);
-    }
-  });
-});
-
-// Fetch related products by product id
-app.get("/productRelated/:id", (req, res) => {
-  let id = parseInt(req.params.id || 0);
-  if (isNaN(id) || id <= 0) {
-    res.json({ "thong bao": "Không biết sản phẩm", id: id });
-    return;
-  }
-
-  db.query("SELECT id_catalog FROM product WHERE id = ?", [id], (err, categoryData) => {
-    if (err) {
-      res.json({ thongbao: "Lỗi xảy ra khi lấy dữ liệu", err });
-    } else if (categoryData.length === 0) {
-      res.json({ thongbao: "Không tìm thấy sản phẩm" });
-    } else {
-      const id_catalog = categoryData[0].id_catalog;
-      db.query("SELECT * FROM product WHERE id_catalog = ? AND id != ?", [id_catalog, id], (err, relatedData) => {
-        if (err) {
-          res.json({ thongbao: "Lỗi xảy ra khi lấy dữ liệu", err });
-        } else {
-          res.json(relatedData);
-        }
-      });
     }
   });
 });
@@ -235,7 +235,7 @@ const upload = multer({
 });
 
 // add product
-app.post("/admin/product", adminAuth, upload.single("img"), (req, res) => {
+app.post("/admin/product", upload.single("img"), (req, res) => {
   const { id_catalog, name, price, price_sale, sale, hot, des } = req.body;
   let img = req.file;
 
