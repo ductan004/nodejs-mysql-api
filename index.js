@@ -286,7 +286,8 @@ app.put("/admin/product/:id", adminAuth, upload.single("img"), (req, res) => {
 
     const product = results[0];
     const oldImagePath = product.img; // Cloudinary URL is not a file path
-    const publicId = oldImagePath
+    const decodedUrl = decodeURIComponent(oldImagePath);
+    const publicId = decodedUrl
       .split("/")
       .slice(7)
       .join("/")
@@ -346,8 +347,8 @@ app.delete("/admin/product/:id", adminAuth, (req, res) => {
 
     const product = results[0];
     const oldImagePath = product.img; // Cloudinary URL is not a file path
-
-    const publicId = oldImagePath
+    const decodedUrl = decodeURIComponent(oldImagePath);
+    const publicId = decodedUrl
       .split("/")
       .slice(7)
       .join("/")
